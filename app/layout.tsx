@@ -18,6 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+        <script dangerouslySetInnerHTML={{ __html: "eruda.init();" }} />
+        
         <Providers>{children}</Providers>
       </body>
     </html>

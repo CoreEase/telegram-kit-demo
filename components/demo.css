@@ -1,11 +1,11 @@
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 20px 16px 80px;
+  padding: 20px 16px 20px;
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .header h1 {

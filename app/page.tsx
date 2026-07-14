@@ -26,8 +26,8 @@ export default function Home() {
   const ctx = useTelegram();
 
   return (
-    <main className="page app-container">
-      <div className="header">
+    <main className="page">
+      <div className="header app-container">
         <h1>@core-ease/telegram-kit demo</h1>
         <p>Every export exercised in one place. Works as a website and as a Telegram Mini App.</p>
         <div className="badges">

@@ -10,7 +10,18 @@
   --accent-foreground: #6ab3f3;
   --border: #232e3c;
   --destructive: #ec3942;
-  --radius: 10px;
+  --radius: 24px;
+
+  --tg-safe-area-inset-top: 0px;
+  --tg-safe-area-inset-bottom: 0px;
+  --tg-safe-area-inset-left: 0px;
+  --tg-safe-area-inset-right: 0px;
+
+  --tg-content-safe-area-inset-top: 0px;
+  --tg-content-safe-area-inset-bottom: 0px;
+  --tg-content-safe-container-top: 0px;
+  --tg-content-safe-area-inset-left: 0px;
+  --tg-content-safe-area-inset-right: 0px;
 }
 
 * {
@@ -29,6 +40,15 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+.app-container {
+  position: relative;
+  min-height: 100vh;
+  padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--tg-safe-area-inset-left, 0px) + var(--tg-content-safe-area-inset-left, 0px));
+  padding-right: calc(var(--tg-safe-area-inset-right, 0px) + var(--tg-content-safe-area-inset-right, 0px));
+} 
 
 code,
 pre {

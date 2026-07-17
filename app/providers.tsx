@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { installDevMode } from '@core-ease/telegram-kit/dev';
 import { TelegramProvider } from '@core-ease/telegram-kit';
 

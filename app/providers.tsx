@@ -8,8 +8,26 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [bgColor, setBgColor] = useState<string>("#0e1621");
+
+  useEffect(() => {
+    const rootStyles = getComputedStyle(document.documentElement);
+    const color = rootStyles.getPropertyValue("--background").trim() || "#0e1621";
+    setBgColor(color);
+  }, []);
+  
   return (
-    <TelegramProvider options={{ allowOutsideTelegram: true }}>
+    <TelegramProvider
+      options={{
+        autoExpand: true,
+        autoDisableVerticalSwipes: true,
+        autoEnableClosingConfirmation: true,
+        backgroundColor: bgColor,
+        headerColor: bgColor,
+        bottomBarColor: bgColor,
+        allowOutsideTelegram: process.env.NODE_ENV === 'development',
+      }}
+    >
       {children}
     </TelegramProvider>
   );

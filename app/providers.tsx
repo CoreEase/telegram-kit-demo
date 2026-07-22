@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         backgroundColor: bgColor,
         headerColor: bgColor,
         bottomBarColor: bgColor,
-        allowOutsideTelegram: process.env.NODE_ENV === 'development',
+        allowOutsideTelegram: true,
       }}
     >
       {children}

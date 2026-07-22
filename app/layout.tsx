@@ -17,8 +17,28 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.GramAds = function() {
+                return new Promise((resolve, reject) => {
+                  if (typeof window._GramAdsShowAd === 'function') {
+                    window._GramAdsShowAd()
+                      .then(() => resolve())
+                      .catch(() => resolve());
+                  } else {
+                    resolve(); 
+                  }
+                });
+              }
+            `,
+          }}
+        />
+        <script async src="https://gramads.pp.ua/sdk/GramAds.js?id=3" />
+      </head>
       <body>
-        <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+        <script src="https://cdn.jsdelivr.net/npm/eruda" />
         <script dangerouslySetInnerHTML={{ __html: "eruda.init();" }} />
         
         <Providers>{children}</Providers>

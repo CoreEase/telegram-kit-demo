@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>عارض 3D الاحترافي</title>
+<style>
+:root {
+  --bg: #0f0f14;
+  --panel: #1a1a24;
+  --panel2: #14141c;
+  --border: #2a2a3a;
+  --accent: #6c5ce7;
+  --accent2: #a29bfe;
+  --text: #e8e8f0;
+  --muted: #8888a0;
+  --success: #00b894;
+  --danger: #ff6b6b;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+header {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.logo .icon {
+  color: var(--accent2);
+  font-size: 1.3rem;
+}
+
+.header-actions { display: flex; gap: 6px; }
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.15rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.icon-btn:active { transform: scale(0.9); background: #252535; }
+.icon-btn.primary { background: var(--accent); border-color: var(--accent); }
+.icon-btn.primary:active { background: #5a4bd1; }
+.icon-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.icon-btn.active { background: rgba(108,92,231,0.25); border-color: var(--accent); color: var(--accent2); }
+
+main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#viewer {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #1a1a28 0%, #0a0a10 100%);
+}
+
+#viewer canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+}
+
+#dropZone {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
+  background: rgba(15,15,20,0.95);
+  z-index: 5;
+  transition: opacity 0.25s;
+  text-align: center;
+}
+
+#dropZone.hidden { opacity: 0; pointer-events: none; }
+#dropZone.dragover { background: rgba(108,92,231,0.15); }
+
+.drop-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  background: var(--panel);
+  border: 2px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.3rem;
+}
+
+.drop-title { font-size: 1.2rem; font-weight: 700; }
+.drop-desc { color: var(--muted); font-size: 0.85rem; max-width: 300px; line-height: 1.5; }
+
+.supported {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 320px;
+}
+
+.tag {
+  background: #252535;
+  color: var(--accent2);
+  padding: 4px 9px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.btn-browse {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 26px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 6px;
+  transition: transform 0.1s;
+}
+
+.btn-browse:active { transform: scale(0.96); }
+
+#loading {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15,15,20,0.85);
+  z-index: 25;
+  gap: 12px;
+  backdrop-filter: blur(4px);
+}
+
+#loading.show { display: flex; }
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#loadingText {
+  font-size: 0.9rem;
+  color: var(--accent2);
+  font-weight: 600;
+}
+
+#status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(26,26,36,0.95);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  z-index: 20;
+  display: none;
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+#status.show { display: block; }
+#status.error { border-color: var(--danger); color: var(--danger); }
+#status.success { border-color: var(--success); color: var(--success); }
+
+.bottomBar {
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 6px 8px;
+  display: flex;
+  gap: 4px;
+  justify-content: space-around;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.bottomBar .icon-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 1.25rem;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  padding: 6px 16px calc(20px + var(--safe-bottom));
+  z-index: 40;
+  transform: translateY(110%);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 75dvh;
+  overflow-y: auto;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.6);
+  overscroll-behavior: contain;
+}
+
+.sheet.open { transform: translateY(0); }
+
+.sheet-handle {
+  width: 42px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 8px auto 14px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sheet-header h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sheet-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.sheet-close:active { background: var(--border); }
+
+.sheet-section {
+  margin-bottom: 22px;
+}
+
+.sheet-section h3 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent2);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.control-row:last-child { border-bottom: none; }
+
+.control-label {
+  font-size: 0.9rem;
+  color: var(--text);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-value {
+  font-size: 0.8rem;
+  color: var(--accent2);
+  font-weight: 700;
+  min-width: 48px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-wrap {
+  padding: 4px 0 8px;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  margin: 6px 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--panel);
+  box-shadow: 0 0 0 2px var(--accent);
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); }
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--panel);
+}
+
+.color-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+
+.color-swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.color-swatch.active { border-color: var(--accent2); transform: scale(1.12); }
+.color-swatch:active { transform: scale(0.92); }
+
+.toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  background: var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  right: 3px;
+  transition: transform 0.2s;
+}
+
+.toggle.on { background: var(--accent); }
+.toggle.on::after { transform: translateX(-20px); }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.info-card {
+  background: var(--panel2);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.info-card.full { grid-column: 1 / -1; }
+
+.info-card .label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  letter-spacing: 0.04em;
+}
+
+.info-card .value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-list {
+  max-height: 160px;
+  overflow-y: auto;
+  background: var(--panel2);
+  border-radius: 10px;
+  padding: 6px;
+  border: 1px solid var(--border);
+}
+
+.file-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  overflow: hidden;
+}
+
+.file-item span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-item .ext {
+  font-size: 0.62rem;
+  background: #2a2a3a;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--muted);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.anim-select {
+  width: 100%;
+  padding: 11px 12px;
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+.btn-action {
+  width: 100%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.btn-action:active { transform: scale(0.97); }
+.btn-action.secondary { background: var(--panel2); border: 1px solid var(--border); }
+.btn-action.danger { background: rgba(255,107,107,0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hidden-section { display: none !important; }
+
+@media (min-width: 640px) {
+  .bottomBar { justify-content: center; gap: 8px; padding: 8px; }
+  .bottomBar .icon-btn { width: 46px; height: 46px; }
+  .sheet {
+    max-width: 520px;
+    left: 50%;
+    right: auto;
+    width: 100%;
+    transform: translate(-50%, 110%);
+    border-radius: 18px 18px 0 0;
+  }
+  .sheet.open { transform: translate(-50%, 0); }
+  .logo { font-size: 1.05rem; }
+}
+
+@media (max-width: 360px) {
+  .bottomBar .icon-btn { width: 40px; height: 40px; font-size: 1.1rem; }
+  .logo { font-size: 0.85rem; }
+  .icon-btn { width: 36px; height: 36px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="icon">◈</span>
+    <span>عارض 3D</span>
+  </div>
+  <div class="header-actions">
+    <button id="btnUpload" class="icon-btn primary" title="رفع ملف">📂</button>
+    <button id="btnInfo" class="icon-btn" title="معلومات">ℹ️</button>
+  </div>
+</header>
+
+<main>
+  <div id="viewer">
+    <div id="dropZone">
+      <div class="drop-icon">📦</div>
+      <div class="drop-title">اسحب ملفك هنا</div>
+      <div class="drop-desc">
+        اسحب نموذج ثلاثي الأبعاد أو أرشيف <strong>ZIP</strong> يحتوي على النموذج والتكستشرز
+      </div>
+      <div class="supported">
+        <span class="tag">GLB</span>
+        <span class="tag">GLTF</span>
+        <span class="tag">OBJ</span>
+        <span class="tag">FBX</span>
+        <span class="tag">STL</span>
+        <span class="tag">PLY</span>
+        <span class="tag">DAE</span>
+        <span class="tag">3DS</span>
+        <span class="tag">ZIP</span>
+      </div>
+      <button class="btn-browse" id="btnBrowse">اختر ملف من الجهاز</button>
+    </div>
+
+    <div id="loading">
+      <div class="spinner"></div>
+      <div id="loadingText">جاري التحميل...</div>
+    </div>
+
+    <div id="status"></div>
+  </div>
+</main>
+
+<div class="bottomBar">
+  <button id="btnReset" class="icon-btn" disabled title="إعادة تعيين">🏠</button>
+  <button id="btnRotate" class="icon-btn" disabled title="دوران">🔄</button>
+  <button id="btnWire" class="icon-btn" disabled title="Wireframe">📐</button>
+  <button id="btnAnim" class="icon-btn hidden-section" title="الحركات">🎬</button>
+  <button id="btnSettings" class="icon-btn" title="الإعدادات">⚙️</button>
+  <button id="btnScreenshot" class="icon-btn" disabled title="لقطة">📸</button>
+  <button id="btnFullscreen" class="icon-btn" title="ملء الشاشة">⛶</button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="sheet" id="settingsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <h2>⚙️ الإعدادات</h2>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+
+  <div class="sheet-section">
+    <h3>الإضاءة والجو</h3>
+    <div class="control-row">
+      <span class="control-label">شدة الإضاءة</span>
+      <span class="control-value" id="valExposure">1.15</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="slExposure" min="0.3" max="2.5" step="0.05" value="1.15">
+    </div>
+
+    <div class="control-row">
+      <span class="control-label">قوة البيئة</span>
+      <span class="control-value" id="valEnv">1.00</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="slEnv" min="0" max="3" step="0.05" value="1">
+    </div>
+
+    <div class="control-row">
+      <span class="control-label">لون الخلفية</span>
+    </div>
+    <div class="color-options" id="bgColors">
+      <div class="color-swatch active" data-color="#0f0f14" style="background:#0f0f14;"></div>
+      <div class="color-swatch" data-color="#1a1a28" style="background:#1a1a28;"></div>
+      <div class="color-swatch" data-color="#2a2a3a" style="background:#2a2a3a;"></div>
+      <div class="color-swatch" data-color="#1e3a5f" style="background:#1e3a5f;"></div>
+      <div class="color-swatch" data-color="#2d1e3a" style="background:#2d1e3a;"></div>
+      <div class="color-swatch" data-color="#f0f0f5" style="background:#f0f0f5;"></div>
+      <div class="color-swatch" data-color="#ffffff" style="background:#ffffff;"></div>
+    </div>
+  </div>
+
+  <div class="sheet-section">
+    <h3>العرض</h3>
+
+    <div class="control-row">
+      <span class="control-label">سرعة الدوران</span>
+      <span class="control-value" id="valRotSpeed">1.0x</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="slRotSpeed" min="0.1" max="5" step="0.1" value="1">
+    </div>
+
+    <div class="control-row">
+      <span class="control-label">🌐 الشبكة</span>
+      <div class="toggle on" id="tgGrid"></div>
+    </div>
+    <div class="control-row">
+      <span class="control-label">📏 المحاور</span>
+      <div class="toggle" id="tgAxes"></div>
+    </div>
+    <div class="control-row">
+      <span class="control-label">🌑 الظلال</span>
+      <div class="toggle on" id="tgShadows"></div>
+    </div>
+    <div class="control-row">
+      <span class="control-label">📐 Wireframe</span>
+      <div class="toggle" id="tgWire"></div>
+    </div>
+  </div>
+
+  <div class="sheet-section hidden-section" id="animSection">
+    <h3>الحركات</h3>
+    <select id="animSelect" class="anim-select"></select>
+    <div class="control-row">
+      <span class="control-label">سرعة التشغيل</span>
+      <span class="control-value" id="valAnimSpeed">1.0x</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="slAnimSpeed" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <button class="btn-action secondary" id="btnPlayPause">⏸ إيقاف</button>
+  </div>
+
+  <div class="sheet-section">
+    <button class="btn-action danger" id="btnResetAll">🔄 إعادة تعيين كل الإعدادات</button>
+  </div>
+</div>
+
+<div class="sheet" id="infoSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <h2>ℹ️ معلومات النموذج</h2>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+
+  <div class="sheet-section">
+    <div class="info-grid">
+      <div class="info-card full">
+        <div class="label">الاسم</div>
+        <div class="value" id="infoName">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">الحجم</div>
+        <div class="value" id="infoSize">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">الصيغة</div>
+        <div class="value" id="infoFormat">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Meshes</div>
+        <div class="value" id="infoMeshes">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Materials</div>
+        <div class="value" id="infoMats">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Vertices</div>
+        <div class="value" id="infoVerts">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Triangles</div>
+        <div class="value" id="infoTris">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Bones</div>
+        <div class="value" id="infoBones">—</div>
+      </div>
+      <div class="info-card">
+        <div class="label">Animations</div>
+        <div class="value" id="infoAnims">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-section hidden-section" id="filesSection">
+    <h3>ملفات الأرشيف</h3>
+    <div class="file-list" id="fileList"></div>
+  </div>
+</div>
+
+<div class="sheet" id="animSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <h2>🎬 الحركات</h2>
+    <button class="sheet-close" data-close>✕</button>
+  </div>
+  <div class="sheet-section">
+    <select id="animSelect2" class="anim-select"></select>
+    <div class="control-row">
+      <span class="control-label">السرعة</span>
+      <span class="control-value" id="valAnimSpeed2">1.0x</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="slAnimSpeed2" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <button class="btn-action" id="btnPlayPause2">⏸ إيقاف</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".glb,.gltf,.zip,.obj,.fbx,.stl,.ply,.dae,.3ds" style="display:none">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+import { ColladaLoader } from 'three/addons/loaders/ColladaLoader.js';
+import { TDSLoader } from 'three/addons/loaders/TDSLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const state = {
+  scene: null,
+  camera: null,
+  renderer: null,
+  controls: null,
+  model: null,
+  mixer: null,
+  animations: [],
+  currentAction: null,
+  playing: true,
+  autoRotate: false,
+  rotateSpeed: 1,
+  wireframe: false,
+  grid: true,
+  axes: false,
+  shadows: true,
+  exposure: 1.15,
+  envIntensity: 1,
+  bgColor: '#0f0f14',
+  clock: new THREE.Clock(),
+  objectURLs: [],
+  pmrem: null
+};
+
+const DOM = {
+  dropZone: document.getElementById('dropZone'),
+  fileInput: document.getElementById('fileInput'),
+  loading: document.getElementById('loading'),
+  loadingText: document.getElementById('loadingText'),
+  status: document.getElementById('status'),
+  overlay: document.getElementById('overlay'),
+  fileList: document.getElementById('fileList'),
+  filesSection: document.getElementById('filesSection'),
+  animSection: document.getElementById('animSection'),
+  animSelect: document.getElementById('animSelect'),
+  animSelect2: document.getElementById('animSelect2'),
+  btnAnim: document.getElementById('btnAnim')
+};
+
+let dracoLoader = null;
+let ktx2Loader = null;
+let gridHelper = null;
+let axesHelper = null;
+let shadowPlane = null;
+let keyLight = null;
+
+function initViewer() {
+  const container = document.getElementById('viewer');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+
+  state.scene = new THREE.Scene();
+  state.scene.background = new THREE.Color(state.bgColor);
+
+  state.camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 1000);
+  state.camera.position.set(0, 1.2, 3.5);
+
+  state.renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    preserveDrawingBuffer: true,
+    powerPreference: 'high-performance'
+  });
+  state.renderer.setSize(w, h);
+  state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  state.renderer.outputColorSpace = THREE.SRGBColorSpace;
+  state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  state.renderer.toneMappingExposure = state.exposure;
+  state.renderer.shadowMap.enabled = true;
+  state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(state.renderer.domElement);
+
+  state.controls = new OrbitControls(state.camera, state.renderer.domElement);
+  state.controls.enableDamping = true;
+  state.controls.dampingFactor = 0.08;
+  state.controls.minDistance = 0.05;
+  state.controls.maxDistance = 200;
+  state.controls.target.set(0, 0.5, 0);
+  state.controls.update();
+
+  state.pmrem = new THREE.PMREMGenerator(state.renderer);
+  const env = state.pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  state.scene.environment = env;
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  state.scene.add(ambient);
+
+  keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  keyLight.position.set(4, 8, 6);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.camera.near = 0.5;
+  keyLight.shadow.camera.far = 50;
+  keyLight.shadow.camera.left = -10;
+  keyLight.shadow.camera.right = 10;
+  keyLight.shadow.camera.top = 10;
+  keyLight.shadow.camera.bottom = -10;
+  keyLight.shadow.bias = -0.0005;
+  state.scene.add(keyLight);
+
+  const fill = new THREE.DirectionalLight(0xaabbff, 0.45);
+  fill.position.set(-4, 3, 2);
+  state.scene.add(fill);
+
+  const rim = new THREE.DirectionalLight(0x8899ff, 0.3);
+  rim.position.set(0, 4, -6);
+  state.scene.add(rim);
+
+  gridHelper = new THREE.GridHelper(20, 40, 0x3a3a4d, 0x1e1e2a);
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = 0.6;
+  state.scene.add(gridHelper);
+
+  axesHelper = new THREE.AxesHelper(2);
+  axesHelper.visible = false;
+  state.scene.add(axesHelper);
+
+  const shadowGeo = new THREE.PlaneGeometry(30, 30);
+  const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
+  shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
+  shadowPlane.rotation.x = -Math.PI / 2;
+  shadowPlane.position.y = -0.001;
+  shadowPlane.receiveShadow = true;
+  state.scene.add(shadowPlane);
+
+  dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
+
+  ktx2Loader = new KTX2Loader();
+  ktx2Loader.setTranscoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/basis/');
+  ktx2Loader.detectSupport(state.renderer);
+
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', () => setTimeout(onResize, 200));
+
+  animate();
+}
+
+function onResize() {
+  const container = document.getElementById('viewer');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  if (!w || !h) return;
+  state.camera.aspect = w / h;
+  state.camera.updateProjectionMatrix();
+  state.renderer.setSize(w, h);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const delta = state.clock.getDelta();
+  if (state.autoRotate && state.model) {
+    state.model.rotation.y += 0.005 * state.rotateSpeed;
+  }
+  if (state.mixer && state.playing) {
+    state.mixer.update(delta);
+  }
+  state.controls.update();
+  state.renderer.render(state.scene, state.camera);
+}
+
+function showLoading(text) {
+  DOM.loadingText.textContent = text || 'جاري التحميل...';
+  DOM.loading.classList.add('show');
+}
+
+function hideLoading() {
+  DOM.loading.classList.remove('show');
+}
+
+function showStatus(msg, type, duration) {
+  type = type || 'info';
+  duration = duration || 3500;
+  DOM.status.textContent = msg;
+  DOM.status.className = 'show ' + type;
+  clearTimeout(showStatus._t);
+  showStatus._t = setTimeout(() => DOM.status.classList.remove('show'), duration);
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '—';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+function formatNum(n) {
+  if (n === undefined || n === null) return '—';
+  return n.toLocaleString('en-US');
+}
+
+function clearModel() {
+  if (state.model) {
+    state.scene.remove(state.model);
+    state.model.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach(m => {
+          for (const k in m) {
+            const v = m[k];
+            if (v && v.isTexture) v.dispose();
+          }
+          m.dispose();
+        });
+      }
+    });
+    state.model = null;
+  }
+  if (state.mixer) {
+    state.mixer.stopAllAction();
+    state.mixer = null;
+  }
+  state.animations = [];
+  state.currentAction = null;
+  state.objectURLs.forEach(url => { try { URL.revokeObjectURL(url); } catch(e){} });
+  state.objectURLs = [];
+}
+
+function fitCameraToObject(object) {
+  const box = new THREE.Box3().setFromObject(object);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  object.position.sub(center);
+  const groundOffset = -box.min.y + object.position.y;
+  object.position.y += size.y / 2 - (box.min.y + center.y);
+
+  const maxDim = Math.max(size.x, size.y, size.z);
+  if (maxDim === 0) return;
+
+  const vFov = state.camera.fov * Math.PI / 180;
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * state.camera.aspect);
+  const fitHeightDist = size.y / (2 * Math.tan(vFov / 2));
+  const fitWidthDist = size.x / (2 * Math.tan(hFov / 2));
+  const dist = Math.max(fitHeightDist, fitWidthDist, maxDim) * 1.4;
+
+  state.camera.position.set(dist * 0.15, size.y * 0.35, dist);
+  state.controls.target.set(0, size.y * 0.05, 0);
+  state.controls.update();
+  state.camera.near = Math.max(0.01, dist * 0.001);
+  state.camera.far = dist * 100;
+  state.camera.updateProjectionMatrix();
+
+  gridHelper.position.y = -size.y / 2 - 0.001;
+  shadowPlane.position.y = -size.y / 2 - 0.001;
+}
+
+function applyModelSettings(model) {
+  model.traverse(obj => {
+    if (obj.isMesh) {
+      obj.castShadow = state.shadows;
+      obj.receiveShadow = state.shadows;
+      if (obj.material) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach(m => { m.wireframe = state.wireframe; });
+      }
+    }
+  });
+}
+
+function collectModelInfo(model, fileName, fileSize, format) {
+  let meshCount = 0, boneCount = 0, vertexCount = 0, triangleCount = 0;
+  const mats = new Set();
+  const boneSet = new Set();
+
+  model.traverse(obj => {
+    if (obj.isMesh) {
+      meshCount++;
+      if (obj.geometry) {
+        const pos = obj.geometry.attributes.position;
+        if (pos) vertexCount += pos.count;
+        if (obj.geometry.index) {
+          triangleCount += obj.geometry.index.count / 3;
+        } else if (pos) {
+          triangleCount += pos.count / 3;
+        }
+      }
+      if (obj.material) {
+        const arr = Array.isArray(obj.material) ? obj.material : [obj.material];
+        arr.forEach(m => mats.add(m.uuid));
+      }
+    }
+    if (obj.isSkinnedMesh && obj.skeleton) {
+      obj.skeleton.bones.forEach(b => boneSet.add(b.uuid));
+    }
+  });
+
+  document.getElementById('infoName').textContent = fileName;
+  document.getElementById('infoName').title = fileName;
+  document.getElementById('infoSize').textContent = formatBytes(fileSize);
+  document.getElementById('infoFormat').textContent = format.toUpperCase();
+  document.getElementById('infoMeshes').textContent = formatNum(meshCount);
+  document.getElementById('infoMats').textContent = formatNum(mats.size);
+  document.getElementById('infoVerts').textContent = formatNum(vertexCount);
+  document.getElementById('infoTris').textContent = formatNum(Math.round(triangleCount));
+  document.getElementById('infoBones').textContent = boneSet.size ? formatNum(boneSet.size) : '—';
+  document.getElementById('infoAnims').textContent = state.animations.length ? formatNum(state.animations.length) : '—';
+}
+
+function setupAnimations(animations) {
+  if (!animations || !animations.length) {
+    DOM.animSection.classList.add('hidden-section');
+    DOM.btnAnim.classList.add('hidden-section');
+    return;
+  }
+  state.animations = animations;
+  state.mixer = new THREE.AnimationMixer(state.model);
+
+  DOM.animSelect.innerHTML = '';
+  DOM.animSelect2.innerHTML = '';
+  animations.forEach((clip, i) => {
+    const opt1 = document.createElement('option');
+    opt1.value = i;
+    opt1.textContent = clip.name || ('حركة ' + (i + 1));
+    DOM.animSelect.appendChild(opt1);
+    const opt2 = opt1.cloneNode(true);
+    DOM.animSelect2.appendChild(opt2);
+  });
+
+  state.currentAction = state.mixer.clipAction(animations[0]);
+  state.currentAction.play();
+  state.playing = true;
+
+  DOM.animSection.classList.remove('hidden-section');
+  DOM.btnAnim.classList.remove('hidden-section');
+
+  DOM.animSelect.onchange = () => switchAnimation(parseInt(DOM.animSelect.value));
+  DOM.animSelect2.onchange = () => switchAnimation(parseInt(DOM.animSelect2.value));
+  updatePlayButton();
+}
+
+function switchAnimation(index) {
+  if (!state.mixer || !state.animations[index]) return;
+  if (state.currentAction) state.currentAction.fadeOut(0.2);
+  state.currentAction = state.mixer.clipAction(state.animations[index]);
+  state.currentAction.reset().fadeIn(0.2).play();
+  state.playing = true;
+  updatePlayButton();
+}
+
+function updatePlayButton() {
+  const txt = state.playing ? '⏸ إيقاف' : '▶ تشغيل';
+  const b1 = document.getElementById('btnPlayPause');
+  const b2 = document.getElementById('btnPlayPause2');
+  if (b1) b1.textContent = txt;
+  if (b2) b2.textContent = txt;
+}
+
+function activateModelUI() {
+  DOM.dropZone.classList.add('hidden');
+  document.getElementById('btnReset').disabled = false;
+  document.getElementById('btnRotate').disabled = false;
+  document.getElementById('btnWire').disabled = false;
+  document.getElementById('btnScreenshot').disabled = false;
+}
+
+function deactivateModelUI() {
+  DOM.dropZone.classList.remove('hidden');
+  document.getElementById('btnReset').disabled = true;
+  document.getElementById('btnRotate').disabled = true;
+  document.getElementById('btnWire').disabled = true;
+  document.getElementById('btnScreenshot').disabled = true;
+  DOM.btnAnim.classList.add('hidden-section');
+  DOM.animSection.classList.add('hidden-section');
+  DOM.filesSection.classList.add('hidden-section');
+  ['infoName','infoSize','infoFormat','infoMeshes','infoMats','infoVerts','infoTris','infoBones','infoAnims'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+}
+
+function finalizeModel(model, fileName, fileSize, format, animations) {
+  clearModel();
+  state.model = model;
+  state.scene.add(model);
+  applyModelSettings(model);
+  fitCameraToObject(model);
+  collectModelInfo(model, fileName, fileSize, format);
+  setupAnimations(animations || []);
+  activateModelUI();
+  state.clock.getDelta();
+}
+
+function makeGLTFLoader(manager) {
+  const loader = new GLTFLoader(manager);
+  loader.setDRACOLoader(dracoLoader);
+  loader.setKTX2Loader(ktx2Loader);
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  return loader;
+}
+
+async function loadGLB(buffer, fileName, fileSize) {
+  showLoading('جاري تحميل النموذج...');
+  return new Promise((resolve, reject) => {
+    const loader = makeGLTFLoader();
+    loader.parse(buffer, '', (gltf) => {
+      finalizeModel(gltf.scene, fileName, fileSize, 'glb', gltf.animations);
+      hideLoading();
+      showStatus('تم تحميل النموذج بنجاح ✓', 'success');
+      resolve();
+    }, (err) => {
+      hideLoading();
+      showStatus('خطأ: ' + (err.message || err), 'error', 5000);
+      reject(err);
+    });
+  });
+}
+
+async function loadFileDirect(file) {
+  const name = file.name;
+  const lower = name.toLowerCase();
+  const ext = lower.split('.').pop();
+  const fileSize = file.size;
+
+  if (lower.endsWith('.zip')) {
+    return loadZip(file);
+  }
+
+  if (ext === 'glb' || ext === 'gltf') {
+    const buffer = await file.arrayBuffer();
+    if (ext === 'glb') {
+      return loadGLB(buffer, name, fileSize);
+    }
+    showLoading('جاري تحميل gltf...');
+    const text = new TextDecoder().decode(buffer);
+    return new Promise((resolve, reject) => {
+      const loader = makeGLTFLoader();
+      loader.parse(text, '', (gltf) => {
+        finalizeModel(gltf.scene, name, fileSize, 'gltf', gltf.animations);
+        hideLoading();
+        showStatus('تم التحميل ✓', 'success');
+        resolve();
+      }, (err) => {
+        hideLoading();
+        showStatus('خطأ: ' + (err.message || err), 'error', 5000);
+        reject(err);
+      });
+    });
+  }
+
+  showLoading('جاري تحميل النموذج...');
+  const url = URL.createObjectURL(file);
+  state.objectURLs.push(url);
+
+  try {
+    if (ext === 'obj') {
+      return await loadOBJ(url, name, fileSize, null, null);
+    }
+    if (ext === 'fbx') {
+      return await loadFBX(url, name, fileSize);
+    }
+    if (ext === 'stl') {
+      return await loadSTL(url, name, fileSize);
+    }
+    if (ext === 'ply') {
+      return await loadPLY(url, name, fileSize);
+    }
+    if (ext === 'dae') {
+      return await loadDAE(url, name, fileSize);
+    }
+    if (ext === '3ds') {
+      return await load3DS(url, name, fileSize);
+    }
+  } catch (err) {
+    hideLoading();
+    showStatus('خطأ: ' + (err.message || err), 'error', 5000);
+  }
+}
+
+function loadOBJ(url, fileName, fileSize, mtlUrl, manager) {
+  return new Promise((resolve, reject) => {
+    const onLoad = (obj) => {
+      const group = new THREE.Group();
+      group.add(obj);
+      finalizeModel(group, fileName, fileSize, 'obj', []);
+      hideLoading();
+      showStatus('تم التحميل ✓', 'success');
+      resolve();
+    };
+    const loader = new OBJLoader(manager || undefined);
+    if (mtlUrl) {
+      const mtlLoader = new MTLLoader(manager || undefined);
+      mtlLoader.load(mtlUrl, (materials) => {
+        materials.preload();
+        loader.setMaterials(materials);
+        loader.load(url, onLoad, undefined, reject);
+      }, undefined, reject);
+    } else {
+      loader.load(url, onLoad, undefined, reject);
+    }
+  });
+}
+
+function loadFBX(url, fileName, fileSize, manager) {
+  return new Promise((resolve, reject) => {
+    new FBXLoader(manager || undefined).load(url, (obj) => {
+      finalizeModel(obj, fileName, fileSize, 'fbx', obj.animations || []);
+      hideLoading();
+      showStatus('تم التحميل ✓', 'success');
+      resolve();
+    }, undefined, reject);
+  });
+}
+
+function loadSTL(url, fileName, fileSize, manager) {
+  return new Promise((resolve, reject) => {
+    new STLLoader(manager || undefined).load(url, (geo) => {
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({ color: 0xb0b0c0, metalness: 0.1, roughness: 0.6 });
+      const mesh = new THREE.Mesh(geo, mat);
+      finalizeModel(mesh, fileName, fileSize, 'stl', []);
+      hideLoading();
+      showStatus('تم التحميل ✓', 'success');
+      resolve();
+    }, undefined, reject);
+  });
+}
+
+function loadPLY(url, fileName, fileSize, manager) {
+  return new Promise((resolve, reject) => {
+    new PLYLoader(manager || undefined).load(url, (geo) => {
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({ color: 0xb0b0c0, metalness: 0.1, roughness: 0.6, vertexColors: !!geo.attributes.color });
+      const mesh = new THREE.Mesh(geo, mat);
+      finalizeModel(mesh, fileName, fileSize, 'ply', []);
+      hideLoading();
+      showStatus('تم التحميل ✓', 'success');
+      resolve();
+    }, undefined, reject);
+  });
+}
+
+function loadDAE(url, fileName, fileSize, manager) {
+  return new Promise((resolve, reject) => {
+    new ColladaLoader(manager || undefined).load(url, (collada) => {
+      finalizeModel(collada.scene, fileName, fileSize, 'dae', collada.animations || []);
+      hideLoading();
+      showStatus('تم التحميل ✓', 'success');
+      resolve();
+    }, undefined, reject);
+  });
+}
+
+function load3DS(url, fileName, fileSize, manager) {
+  return new Promise((resolve, reject) => {
+    new TDSLoader(manager || undefined).load(url, (obj) => {
+      finalizeModel(obj, fileName, fileSize, '3ds', []);
+      hideLoading();
+      showStatus('تم التحميل ✓', 'success');
+      resolve();
+    }, undefined, reject);
+  });
+}
+
+async function loadZip(file) {
+  showLoading('جاري فك الضغط...');
+  try {
+    const zip = await JSZip.loadAsync(file);
+    const entries = [];
+    zip.forEach((path, entry) => { if (!entry.dir) entries.push(entry); });
+
+    const urlMap = {};
+    for (const entry of entries) {
+      const blob = await entry.async('blob');
+      const url = URL.createObjectURL(blob);
+      state.objectURLs.push(url);
+      urlMap[entry.name] = url;
+      const base = entry.name.split('/').pop();
+      if (!urlMap[base]) urlMap[base] = url;
+    }
+
+    DOM.fileList.innerHTML = '';
+    entries.forEach(entry => {
+      const ext = entry.name.split('.').pop().toLowerCase();
+      const div = document.createElement('div');
+      div.className = 'file-item';
+      div.innerHTML = `<span class="ext">${ext}</span><span>${entry.name}</span>`;
+      DOM.fileList.appendChild(div);
+    });
+    DOM.filesSection.classList.remove('hidden-section');
+
+    const manager = new THREE.LoadingManager();
+    manager.setURLModifier((url) => {
+      if (/^(blob:|data:|https?:|\/\/)/.test(url)) return url;
+      const clean = url.replace(/^\.\//, '').replace(/^\/+/, '');
+      const base = clean.split('/').pop();
+      return urlMap[clean] || urlMap[base] || url;
+    });
+
+    const supportedExts = ['glb','gltf','obj','fbx','stl','ply','dae','3ds'];
+    let modelEntry = null;
+    for (const ext of supportedExts) {
+      modelEntry = entries.find(e => e.name.toLowerCase().endsWith('.' + ext));
+      if (modelEntry) break;
+    }
+
+    if (!modelEntry) {
+      hideLoading();
+      showStatus('لا يوجد نموذج مدعوم داخل الأرشيف', 'error', 5000);
+      return;
+    }
+
+    const ext = modelEntry.name.split('.').pop().toLowerCase();
+    const fileSize = file.size;
+
+    if (ext === 'glb') {
+      const buffer = await modelEntry.async('arraybuffer');
+      return loadGLB(buffer, modelEntry.name, fileSize);
+    }
+
+    if (ext === 'gltf') {
+      showLoading('جاري تجهيز glTF...');
+      const text = await modelEntry.async('text');
+      return new Promise((resolve, reject) => {
+        const loader = makeGLTFLoader(manager);
+        loader.parse(text, '', (gltf) => {
+          finalizeModel(gltf.scene, modelEntry.name, fileSize, 'gltf', gltf.animations);
+          hideLoading();
+          showStatus('تم التحميل من ZIP ✓', 'success');
+          resolve();
+        }, (err) => {
+          hideLoading();
+          showStatus('خطأ: ' + (err.message || err), 'error', 5000);
+          reject(err);
+        });
+      });
+    }
+
+    showLoading('جاري تحميل النموذج...');
+
+    if (ext === 'obj') {
+      const mtlEntry = entries.find(e => e.name.toLowerCase().endsWith('.mtl'));
+      const objUrl = urlMap[modelEntry.name];
+      const mtlUrl = mtlEntry ? urlMap[mtlEntry.name] : null;
+      return loadOBJ(objUrl, modelEntry.name, fileSize, mtlUrl, manager);
+    }
+    if (ext === 'fbx') {
+      return loadFBX(urlMap[modelEntry.name], modelEntry.name, fileSize, manager);
+    }
+    if (ext === 'stl') {
+      return loadSTL(urlMap[modelEntry.name], modelEntry.name, fileSize, manager);
+    }
+    if (ext === 'ply') {
+      return loadPLY(urlMap[modelEntry.name], modelEntry.name, fileSize, manager);
+    }
+    if (ext === 'dae') {
+      return loadDAE(urlMap[modelEntry.name], modelEntry.name, fileSize, manager);
+    }
+    if (ext === '3ds') {
+      return load3DS(urlMap[modelEntry.name], modelEntry.name, fileSize, manager);
+    }
+  } catch (err) {
+    hideLoading();
+    showStatus('خطأ في الأرشيف: ' + (err.message || err), 'error', 5000);
+  }
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  const supportedExts = ['glb','gltf','zip','obj','fbx','stl','ply','dae','3ds'];
+  const ext = file.name.toLowerCase().split('.').pop();
+  if (!supportedExts.includes(ext)) {
+    showStatus('الصيغة غير مدعومة: ' + ext, 'error');
+    return;
+  }
+  try {
+    await loadFileDirect(file);
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    showStatus('حدث خطأ: ' + (err.message || err), 'error', 5000);
+  }
+}
+
+function openSheet(id) {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  const sheet = document.getElementById(id);
+  if (sheet) sheet.classList.add('open');
+  DOM.overlay.classList.add('show');
+}
+
+function closeSheets() {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  DOM.overlay.classList.remove('show');
+}
+
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.onclick = closeSheets;
+});
+
+DOM.overlay.onclick = closeSheets;
+
+document.getElementById('btnUpload').onclick = () => DOM.fileInput.click();
+document.getElementById('btnBrowse').onclick = () => DOM.fileInput.click();
+
+DOM.fileInput.onchange = (e) => {
+  if (e.target.files[0]) {
+    handleFile(e.target.files[0]);
+    e.target.value = '';
+  }
+};
+
+['dragenter', 'dragover'].forEach(ev => {
+  DOM.dropZone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    DOM.dropZone.classList.add('dragover');
+  });
+});
+
+['dragleave', 'drop'].forEach(ev => {
+  DOM.dropZone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    DOM.dropZone.classList.remove('dragover');
+  });
+});
+
+DOM.dropZone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+const viewerEl = document.getElementById('viewer');
+viewerEl.addEventListener('dragover', e => e.preventDefault());
+viewerEl.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+document.getElementById('btnInfo').onclick = () => openSheet('infoSheet');
+document.getElementById('btnSettings').onclick = () => openSheet('settingsSheet');
+DOM.btnAnim.onclick = () => openSheet('animSheet');
+
+document.getElementById('btnReset').onclick = () => {
+  clearModel();
+  deactivateModelUI();
+  DOM.fileList.innerHTML = '';
+  DOM.animSelect.innerHTML = '';
+  DOM.animSelect2.innerHTML = '';
+  showStatus('تمت إعادة التعيين');
+};
+
+document.getElementById('btnRotate').onclick = () => {
+  if (!state.model) return;
+  state.autoRotate = !state.autoRotate;
+  document.getElementById('btnRotate').classList.toggle('active', state.autoRotate);
+};
+
+function setWireframe(val) {
+  state.wireframe = val;
+  document.getElementById('btnWire').classList.toggle('active', val);
+  document.getElementById('tgWire').classList.toggle('on', val);
+  if (state.model) {
+    state.model.traverse(obj => {
+      if (obj.isMesh && obj.material) {
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach(m => { m.wireframe = val; });
+      }
+    });
+  }
+}
+
+document.getElementById('btnWire').onclick = () => setWireframe(!state.wireframe);
+
+document.getElementById('btnScreenshot').onclick = () => {
+  if (!state.renderer) return;
+  state.renderer.render(state.scene, state.camera);
+  const dataURL = state.renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataURL;
+  a.download = '3d-screenshot-' + Date.now() + '.png';
+  a.click();
+  showStatus('تم حفظ اللقطة ✓', 'success');
+};
+
+document.getElementById('btnFullscreen').onclick = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+};
+
+const slExposure = document.getElementById('slExposure');
+const valExposure = document.getElementById('valExposure');
+slExposure.oninput = () => {
+  state.exposure = parseFloat(slExposure.value);
+  valExposure.textContent = state.exposure.toFixed(2);
+  state.renderer.toneMappingExposure = state.exposure;
+};
+
+const slEnv = document.getElementById('slEnv');
+const valEnv = document.getElementById('valEnv');
+slEnv.oninput = () => {
+  state.envIntensity = parseFloat(slEnv.value);
+  valEnv.textContent = state.envIntensity.toFixed(2);
+  if (state.scene.environment) {
+    if (!state.scene.environmentIntensity) {
+      state.scene.environmentIntensity = state.envIntensity;
+    } else {
+      state.scene.environmentIntensity = state.envIntensity;
+    }
+  }
+};
+
+const slRotSpeed = document.getElementById('slRotSpeed');
+const valRotSpeed = document.getElementById('valRotSpeed');
+slRotSpeed.oninput = () => {
+  state.rotateSpeed = parseFloat(slRotSpeed.value);
+  valRotSpeed.textContent = state.rotateSpeed.toFixed(1) + 'x';
+};
+
+document.getElementById('bgColors').addEventListener('click', (e) => {
+  const sw = e.target.closest('.color-swatch');
+  if (!sw) return;
+  document.querySelectorAll('#bgColors .color-swatch').forEach(s => s.classList.remove('active'));
+  sw.classList.add('active');
+  const color = sw.dataset.color;
+  state.bgColor = color;
+  state.scene.background = new THREE.Color(color);
+});
+
+document.getElementById('tgGrid').onclick = function() {
+  state.grid = !state.grid;
+  this.classList.toggle('on', state.grid);
+  gridHelper.visible = state.grid;
+};
+
+document.getElementById('tgAxes').onclick = function() {
+  state.axes = !state.axes;
+  this.classList.toggle('on', state.axes);
+  axesHelper.visible = state.axes;
+};
+
+document.getElementById('tgShadows').onclick = function() {
+  state.shadows = !state.shadows;
+  this.classList.toggle('on', state.shadows);
+  shadowPlane.visible = state.shadows;
+  keyLight.castShadow = state.shadows;
+  if (state.model) {
+    state.model.traverse(obj => {
+      if (obj.isMesh) {
+        obj.castShadow = state.shadows;
+        obj.receiveShadow = state.shadows;
+      }
+    });
+  }
+};
+
+document.getElementById('tgWire').onclick = function() {
+  setWireframe(!state.wireframe);
+};
+
+const slAnimSpeed = document.getElementById('slAnimSpeed');
+const slAnimSpeed2 = document.getElementById('slAnimSpeed2');
+const valAnimSpeed = document.getElementById('valAnimSpeed');
+const valAnimSpeed2 = document.getElementById('valAnimSpeed2');
+
+function setAnimSpeed(v) {
+  const speed = parseFloat(v);
+  if (state.currentAction) state.currentAction.timeScale = speed;
+  valAnimSpeed.textContent = speed.toFixed(1) + 'x';
+  valAnimSpeed2.textContent = speed.toFixed(1) + 'x';
+  slAnimSpeed.value = speed;
+  slAnimSpeed2.value = speed;
+}
+
+slAnimSpeed.oninput = () => setAnimSpeed(slAnimSpeed.value);
+slAnimSpeed2.oninput = () => setAnimSpeed(slAnimSpeed2.value);
+
+document.getElementById('btnPlayPause').onclick = () => {
+  state.playing = !state.playing;
+  updatePlayButton();
+};
+
+document.getElementById('btnPlayPause2').onclick = () => {
+  state.playing = !state.playing;
+  updatePlayButton();
+};
+
+document.getElementById('btnResetAll').onclick = () => {
+  state.exposure = 1.15;
+  state.envIntensity = 1;
+  state.rotateSpeed = 1;
+  state.wireframe = false;
+  state.grid = true;
+  state.axes = false;
+  state.shadows = true;
+  state.bgColor = '#0f0f14';
+
+  slExposure.value = 1.15;
+  valExposure.textContent = '1.15';
+  state.renderer.toneMappingExposure = 1.15;
+
+  slEnv.value = 1;
+  valEnv.textContent = '1.00';
+  if (state.scene.environmentIntensity !== undefined) state.scene.environmentIntensity = 1;
+
+  slRotSpeed.value = 1;
+  valRotSpeed.textContent = '1.0x';
+
+  document.getElementById('tgGrid').classList.add('on');
+  document.getElementById('tgAxes').classList.remove('on');
+  document.getElementById('tgShadows').classList.add('on');
+  document.getElementById('tgWire').classList.remove('on');
+  gridHelper.visible = true;
+  axesHelper.visible = false;
+  shadowPlane.visible = true;
+  keyLight.castShadow = true;
+  setWireframe(false);
+
+  state.scene.background = new THREE.Color('#0f0f14');
+  document.querySelectorAll('#bgColors .color-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color === '#0f0f14');
+  });
+
+  if (state.model) applyModelSettings(state.model);
+  showStatus('تمت إعادة التعيين ✓', 'success');
+};
+
+document.getElementById('btnResetCam')?.addEventListener('click', () => {
+  if (state.model) fitCameraToObject(state.model);
+});
+
+document.querySelectorAll('.sheet').forEach(sheet => {
+document.querySelectorAll('.sheet').forEach(sheet => {
+  let startY = 0;
+  let currentY = 0;
+  let dragging = false;
+  const handle = sheet.querySelector('.sheet-handle');
+
+  handle?.addEventListener('touchstart', (e) => {
+    dragging = true;
+    startY = e.touches[0].clientY;
+    sheet.style.transition = 'none';
+  }, { passive: true });
+
+  handle?.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    currentY = e.touches[0].clientY;
+    const delta = currentY - startY;
+    if (delta > 0) sheet.style.transform = `translateY(${delta}px)`;
+  }, { passive: true });
+
+  handle?.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    sheet.style.transition = '';
+    sheet.style.transform = '';
+    if (currentY - startY > 80) closeSheets();
+    startY = 0;
+    currentY = 0;
+  });
+});
+
+initViewer();
+</script>
+</body>
+</html>
